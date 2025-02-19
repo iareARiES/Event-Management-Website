@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3399cc;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #007bb5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Razorpay Payment</h1>
+        <input type="number" id="amount" placeholder="Enter amount (INR)" min="1" />
+        <button id="payButton">Pay Now</button>
+    </div>
+    <Script></Script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const amountInput = document.getElementById('amount');
+            const payButton = document.getElementById('payButton');
+
+            payButton.addEventListener('click', handlePayment);
+
+            async function handlePayment() {
+                const amount = amountInput.value;
+                if (!amount || amount <= 0) {
+                    alert('Please enter a valid amount');
+                    return;
+                }
+
+                payButton.disabled = true;
+                payButton.textContent = 'Processing...';
+
+                try {
+                    const response = await fetch('/create-order', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ amount: parseFloat(amount) }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to create order');
+                    }
+
+                    const order = await response.json();
+
+                    const options = {
+                        key: 'rzp_test_vl7yYnDYiXhLns', // Replace with your actual Razorpay Key ID
+                        amount: order.amount,
+                        currency: order.currency,
+                        name: 'Your Company Name',
+                        description: 'Payment for your product/service',
+                        order_id: order.id,
+                        handler: function (response) {
+                            alert('Payment successful! Payment ID: ' + response.razorpay_payment_id);
+                            // Optional: Send payment details to your server for further processing
+                        },
+                        prefill: {
+                            name: 'Customer Name',
+                            email: 'customer@example.com',
+                            contact: '9999999999',
+                        },
+                        theme: {
+                            color: '#3399cc',
+                        },
+                    };
+
+                    const razorpay = new Razorpay(options);
+                    razorpay.open();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    payButton.disabled = false;
+                    payButton.textContent = 'Pay Now';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
